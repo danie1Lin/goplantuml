@@ -71,6 +71,7 @@ type RenderingOptions struct {
 	ConnectionLabels        bool
 	AggregatePrivateMembers bool
 	PrivateMembers          bool
+	IgnoreAliasType         bool
 }
 
 const aliasComplexNameComment = "'This class was created so that we can correctly have an alias pointing to this name. Since it contains dots that can break namespaces"
@@ -141,6 +142,7 @@ func NewClassDiagramWithOptions(options *ClassDiagramOptions) (*ClassParser, err
 			ConnectionLabels: false,
 			Title:            "",
 			Notes:            "",
+			IgnoreAliasType:  true,
 		},
 		structure:         make(map[string]map[string]*Struct),
 		allInterfaces:     make(map[string]struct{}),
@@ -331,10 +333,15 @@ func (p *ClassParser) handleGenDecl(decl *ast.GenDecl) {
 func (p *ClassParser) processSpec(spec ast.Spec) {
 	var typeName string
 	var alias *Alias
+	var isRealTypeAlias bool
 	declarationType := "alias"
 	switch v := spec.(type) {
 	case *ast.TypeSpec:
 		typeName = v.Name.Name
+		isRealTypeAlias = v.Assign != 0
+		if isRealTypeAlias {
+			return
+		}
 		switch c := v.Type.(type) {
 		case *ast.StructType:
 			declarationType = "class"
